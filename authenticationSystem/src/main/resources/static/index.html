@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Demo Auth JWT & Role</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background-color: #f4f4f9; }
+        h1 { color: #333; }
+        .box { background: white; border: 1px solid #ddd; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .hidden { display: none; }
+        input { padding: 8px; border-radius: 4px; border: 1px solid #ccc; width: 200px; }
+        button { padding: 8px 15px; border-radius: 4px; border: none; cursor: pointer; color: white; background-color: #007bff; font-weight: bold; margin-right: 5px; }
+        button:hover { background-color: #0056b3; }
+        button.logout { background-color: #dc3545; }
+        button.logout:hover { background-color: #a71d2a; }
+        #responseArea { background: #e9ecef; padding: 15px; border-radius: 5px; border-left: 5px solid #007bff; font-family: monospace; white-space: pre-wrap; }
+        .label-token { font-size: 11px; color: #666; word-break: break-all; margin-top: 5px; display: block; }
+    </style>
+</head>
+<body>
+
+<h1>Progetto Security: JWT Demo</h1>
+
+<div id="loginSection" class="box">
+    <h3>1. Autenticazione</h3>
+    <p>Inserisci un nome utente per generare il tuo passaporto digitale (JWT).</p>
+    <input type="text" id="username" placeholder="Username (es. studente)">
+    <button onclick="doLogin()">Login (Ottieni Token)</button>
+</div>
+
+<div id="protectedSection" class="box hidden">
+    <h3>2. Area Protetta</h3>
+    <p>Sei autenticato! Ora puoi usare il token per le chiamate sicure.</p>
+
+    <div style="background: #ffffcc; padding: 10px; border-radius: 4px; margin-bottom: 15px;">
+        <strong>Il tuo Token (JWS):</strong>
+        <span id="tokenDisplay" class="label-token"></span>
+    </div>
+
+    <div style="margin-bottom: 15px;">
+        <button onclick="callVerifyApi()">Verifica Validità</button>
+        <button onclick="callGetRoleApi()" style="background-color: #28a745;">Scopri il mio Ruolo</button>
+    </div>
+
+    <hr>
+    <button onclick="logout()" class="logout">Logout</button>
+</div>
+
+<div class="box">
+    <h3>Risposta dal Server:</h3>
+    <div id="responseArea">Nessuna operazione ancora effettuata...</div>
+</div>
+
+<script>
+    const API_URL = "http://localhost:8080";
+
+    // --- FUNZIONE LOGIN ---
+    async function doLogin() {
+        const user = document.getElementById("username").value;
+        if(!user) { alert("Scrivi un nome!"); return; }
+
+        try {
+            const response = await fetch(`${API_URL}/login?username=${user}`, { method: 'POST' });
+            if (response.ok) {
+                const data = await response.json();
+                localStorage.setItem("jwt_token", data.access_token); // Salva token
+                showProtectedSection(data.access_token);
+                log("Login effettuato con successo!\nToken salvato nel LocalStorage.");
+            } else {
+                log("Errore login.");
+            }
+        } catch (error) { log("Errore connessione: " + error); }
+    }
+
+    // --- FUNZIONE VERIFICA (Già presente) ---
+    async function callVerifyApi() {
+        const token = localStorage.getItem("jwt_token");
+        if (!token) return;
+
+        try {
+            const response = await fetch(`${API_URL}/verify`, {
+                method: 'GET',
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            const text = await response.text();
+            log("Endpoint /verify dice:\n" + text);
+        } catch (error) { log("Errore API: " + error); }
+    }
+
+    // --- NUOVA FUNZIONE: GET ROLE ---
+    async function callGetRoleApi() {
+        const token = localStorage.getItem("jwt_token");
+        if (!token) {
+            log("Errore: Non hai il token. Fai login.");
+            return;
+        }
+
+        try {
+            // Chiama il tuo nuovo endpoint Java
+            const response = await fetch(`${API_URL}/getRole`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + token // Passiamo sempre il passaporto!
+                }
+            });
+
+            const text = await response.text();
+
+            // Abbelliamo la risposta
+            log("Endpoint /getRole dice:\nIl tuo ruolo nel token è: " + text);
+
+        } catch (error) {
+            log("Errore API: " + error);
+        }
+    }
+
+    // --- UTILITY ---
+    function logout() {
+        localStorage.removeItem("jwt_token");
+        document.getElementById("loginSection").classList.remove("hidden");
+        document.getElementById("protectedSection").classList.add("hidden");
+        log("Logout effettuato.");
+        document.getElementById("username").value = "";
+    }
+
+    function showProtectedSection(token) {
+        document.getElementById("loginSection").classList.add("hidden");
+        document.getElementById("protectedSection").classList.remove("hidden");
+        document.getElementById("tokenDisplay").innerText = token;
+    }
+
+    function log(msg) {
+        document.getElementById("responseArea").innerText = msg;
+    }
+</script>
+
+</body>
+</html>
