@@ -2,6 +2,7 @@ package org.example.authenticationsystem.controller;
 
 import com.nimbusds.jose.JOSEException;
 import org.example.authenticationsystem.model.UserEntity;
+import org.example.authenticationsystem.repository.UserRepository;
 import org.example.authenticationsystem.service.TokenService;
 import org.springframework.web.bind.annotation.*;
 
