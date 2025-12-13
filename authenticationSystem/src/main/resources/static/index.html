@@ -2,77 +2,131 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>Demo Auth JWT & Role</title>
+    <title>Security By Design</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background-color: #f4f4f9; }
-        h1 { color: #333; }
-        .box { background: white; border: 1px solid #ddd; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background-color: #f4f4f9; color: #333; }
+        h1 { text-align: center; color: #2c3e50; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .box { background: white; border: 1px solid #ddd; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .hidden { display: none; }
-        input { padding: 8px; border-radius: 4px; border: 1px solid #ccc; width: 200px; }
-        button { padding: 8px 15px; border-radius: 4px; border: none; cursor: pointer; color: white; background-color: #007bff; font-weight: bold; margin-right: 5px; }
-        button:hover { background-color: #0056b3; }
-        button.logout { background-color: #dc3545; }
-        button.logout:hover { background-color: #a71d2a; }
-        #responseArea { background: #e9ecef; padding: 15px; border-radius: 5px; border-left: 5px solid #007bff; font-family: monospace; white-space: pre-wrap; }
-        .label-token { font-size: 11px; color: #666; word-break: break-all; margin-top: 5px; display: block; }
+        input { padding: 10px; border-radius: 4px; border: 1px solid #ccc; width: 40%; margin-right: 10px; margin-bottom: 10px;}
+        button { padding: 10px 20px; border-radius: 4px; border: none; cursor: pointer; color: white; font-weight: bold; transition: background 0.3s; }
+        .btn-primary { background-color: #007bff; }
+        .btn-primary:hover { background-color: #0056b3; }
+        .btn-success { background-color: #28a745; }
+        .btn-success:hover { background-color: #1e7e34; }
+        .btn-warning { background-color: #ffc107; color: #333; }
+        .btn-warning:hover { background-color: #d39e00; }
+        .btn-danger { background-color: #dc3545; }
+        .btn-danger:hover { background-color: #a71d2a; }
+        #responseArea { background: #2d3436; color: #00cec9; padding: 15px; border-radius: 5px; font-family: 'Courier New', monospace; white-space: pre-wrap; min-height: 50px;}
+        .token-box { background: #fff3cd; border: 1px solid #ffeeba; color: #856404; padding: 10px; border-radius: 4px; word-break: break-all; font-family: monospace; font-size: 12px; }
+        h3 { margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 10px; }
     </style>
 </head>
 <body>
 
-<h1>Progetto Security: JWT Demo</h1>
+<div class="container">
 
-<div id="loginSection" class="box">
-    <h3>1. Autenticazione</h3>
-    <p>Inserisci un nome utente per generare il tuo passaporto digitale (JWT).</p>
-    <input type="text" id="username" placeholder="Username (es. studente)">
-    <button onclick="doLogin()">Login (Ottieni Token)</button>
-</div>
+    <h1>Sistema di Autenticazione JWT + H2</h1>
 
-<div id="protectedSection" class="box hidden">
-    <h3>2. Area Protetta</h3>
-    <p>Sei autenticato! Ora puoi usare il token per le chiamate sicure.</p>
+    <div id="publicSection">
 
-    <div style="background: #ffffcc; padding: 10px; border-radius: 4px; margin-bottom: 15px;">
-        <strong>Il tuo Token (JWS):</strong>
-        <span id="tokenDisplay" class="label-token"></span>
+        <div class="box">
+            <h3>1. Registrazione</h3>
+            <p>Crea un utente nel database H2.</p>
+            <input type="text" id="regUser" placeholder="Username">
+            <input type="password" id="regPass" placeholder="Password">
+            <br>
+            <button onclick="doRegister()" class="btn-success">Registrati</button>
+        </div>
+
+        <div class="box">
+            <h3>2. Login</h3>
+            <p>Inserisci le credenziali per ricevere il token.</p>
+            <input type="text" id="loginUser" placeholder="Username">
+            <input type="password" id="loginPass" placeholder="Password">
+            <br>
+            <button onclick="doLogin()" class="btn-primary">Login</button>
+        </div>
     </div>
 
-    <div style="margin-bottom: 15px;">
-        <button onclick="callVerifyApi()">Verifica Validità</button>
-        <button onclick="callGetRoleApi()" style="background-color: #28a745;">Scopri il mio Ruolo</button>
+    <div id="protectedSection" class="box hidden">
+        <h3>3. Area Protetta</h3>
+        <p>Benvenuto, sei autenticato.</p>
+
+        <div style="margin-bottom: 20px;">
+            <strong>Token Attuale:</strong>
+            <div id="tokenDisplay" class="token-box"></div>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <button onclick="callVerifyApi()" class="btn-warning">Verifica Integrità</button>
+            <button onclick="callGetRoleApi()" class="btn-primary">Ottieni Ruolo</button>
+        </div>
+
+        <hr>
+        <button onclick="logout()" class="btn-danger">Logout</button>
     </div>
 
-    <hr>
-    <button onclick="logout()" class="logout">Logout</button>
-</div>
+    <div class="box">
+        <h3>Risposta Server:</h3>
+        <div id="responseArea">In attesa...</div>
+    </div>
 
-<div class="box">
-    <h3>Risposta dal Server:</h3>
-    <div id="responseArea">Nessuna operazione ancora effettuata...</div>
 </div>
 
 <script>
     const API_URL = "http://localhost:8080";
 
-    // --- FUNZIONE LOGIN ---
-    async function doLogin() {
-        const user = document.getElementById("username").value;
-        if(!user) { alert("Scrivi un nome!"); return; }
+    async function doRegister() {
+        const u = document.getElementById("regUser").value;
+        const p = document.getElementById("regPass").value;
+
+        if(!u || !p) { log("Errore: Inserisci username e password."); return; }
 
         try {
-            const response = await fetch(`${API_URL}/login?username=${user}`, { method: 'POST' });
-            if (response.ok) {
-                const data = await response.json();
-                localStorage.setItem("jwt_token", data.access_token); // Salva token
-                showProtectedSection(data.access_token);
-                log("Login effettuato con successo!\nToken salvato nel LocalStorage.");
+            const response = await fetch(`${API_URL}/register?username=${u}&password=${p}`, {
+                method: 'POST'
+            });
+            const text = await response.text();
+
+            if(text.includes("SUCCESS")) {
+                log(text + "\nOra puoi effettuare il login.");
+                document.getElementById("regUser").value = "";
+                document.getElementById("regPass").value = "";
+                document.getElementById("loginUser").value = u;
             } else {
-                log("Errore login.");
+                log(text);
             }
-        } catch (error) { log("Errore connessione: " + error); }
+        } catch (error) { log("Errore Critico: " + error); }
     }
 
-    // --- FUNZIONE VERIFICA (Già presente) ---
+    async function doLogin() {
+        const u = document.getElementById("loginUser").value;
+        const p = document.getElementById("loginPass").value;
+
+        if(!u || !p) { log("Errore: Inserisci username e password."); return; }
+
+        try {
+            const response = await fetch(`${API_URL}/login?username=${u}&password=${p}`, {
+                method: 'POST'
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const token = data.access_token;
+
+                localStorage.setItem("jwt_token", token);
+
+                showProtectedSection(token);
+                log("Login effettuato. Token salvato.");
+            } else {
+                log("Errore Login: Credenziali errate o utente non trovato.");
+            }
+        } catch (error) { log("Errore Connessione: " + error); }
+    }
+
     async function callVerifyApi() {
         const token = localStorage.getItem("jwt_token");
         if (!token) return;
@@ -83,55 +137,50 @@
                 headers: { 'Authorization': 'Bearer ' + token }
             });
             const text = await response.text();
-            log("Endpoint /verify dice:\n" + text);
+            log("Risposta Server:\n" + text);
         } catch (error) { log("Errore API: " + error); }
     }
 
-    // --- NUOVA FUNZIONE: GET ROLE ---
     async function callGetRoleApi() {
         const token = localStorage.getItem("jwt_token");
-        if (!token) {
-            log("Errore: Non hai il token. Fai login.");
-            return;
-        }
-
         try {
-            // Chiama il tuo nuovo endpoint Java
             const response = await fetch(`${API_URL}/getRole`, {
                 method: 'GET',
-                headers: {
-                    'Authorization': 'Bearer ' + token // Passiamo sempre il passaporto!
-                }
+                headers: { 'Authorization': 'Bearer ' + token }
             });
-
             const text = await response.text();
-
-            // Abbelliamo la risposta
-            log("Endpoint /getRole dice:\nIl tuo ruolo nel token è: " + text);
-
-        } catch (error) {
-            log("Errore API: " + error);
-        }
+            log("Ruolo Utente:\n" + text);
+        } catch (error) { log("Errore API: " + error); }
     }
 
-    // --- UTILITY ---
     function logout() {
         localStorage.removeItem("jwt_token");
-        document.getElementById("loginSection").classList.remove("hidden");
+        document.getElementById("publicSection").classList.remove("hidden");
         document.getElementById("protectedSection").classList.add("hidden");
+        document.getElementById("loginPass").value = "";
         log("Logout effettuato.");
-        document.getElementById("username").value = "";
     }
 
     function showProtectedSection(token) {
-        document.getElementById("loginSection").classList.add("hidden");
+        document.getElementById("publicSection").classList.add("hidden");
         document.getElementById("protectedSection").classList.remove("hidden");
         document.getElementById("tokenDisplay").innerText = token;
     }
 
     function log(msg) {
-        document.getElementById("responseArea").innerText = msg;
+        const area = document.getElementById("responseArea");
+        area.innerText = msg;
+        area.style.backgroundColor = "#444";
+        setTimeout(() => area.style.backgroundColor = "#2d3436", 200);
     }
+
+    window.onload = function() {
+        const existingToken = localStorage.getItem("jwt_token");
+        if(existingToken) {
+            showProtectedSection(existingToken);
+            log("Token trovato in memoria.");
+        }
+    };
 </script>
 
 </body>

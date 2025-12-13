@@ -4,6 +4,7 @@ import com.nimbusds.jose.JOSEException;
 import org.example.authenticationsystem.model.UserEntity;
 import org.example.authenticationsystem.repository.UserRepository;
 import org.example.authenticationsystem.service.TokenService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -18,6 +19,8 @@ public class AuthController {
 
     private final TokenService tokenService;
     private final UserRepository userRepository;
+
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     /**
      * Constructor for dependency injection.
@@ -35,19 +38,20 @@ public class AuthController {
      * Checks if the username already exists before saving.
      *
      * @param username The desired username.
-     * @param password The raw password (note: in production, this should be hashed).
+     * @param password The hashed password.
      * @return A status message indicating success or failure.
      */
     @PostMapping("/register")
     public String register(@RequestParam String username, @RequestParam String password) {
-        // Check if user already exists in the database
         if (userRepository.findByUsername(username).isPresent()) {
             return "ERROR: User already exists!";
         }
 
-        UserEntity newUser = new UserEntity(username, password, "student");
+        // 2. HASHING: Trasformiamo "pippo123" in "$2a$10$EixZaY..."
+        String hashedPassword = passwordEncoder.encode(password);
 
-        // Persist to H2 Database
+        // Salviamo l'utente con la password cifrata
+        UserEntity newUser = new UserEntity(username, hashedPassword, "student");
         userRepository.save(newUser);
 
         return "SUCCESS: Registration completed for user " + username;
@@ -64,19 +68,16 @@ public class AuthController {
      */
     @PostMapping("/login")
     public Map<String, String> login(@RequestParam String username, @RequestParam String password) throws JOSEException {
-        // 1. Find user in Database
         UserEntity user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("ERROR: User not found"));
 
-        // 2. Validate Password
-        if (!user.getPassword().equals(password)) {
+        // 3. VERIFICA: Non possiamo usare .equals()!
+        // Dobbiamo usare .matches(password_in_chiaro, password_nel_db)
+        if (!passwordEncoder.matches(password, user.getPassword())) {
             throw new RuntimeException("ERROR: Wrong password!");
         }
 
-        // 3. Generate the signed JWS token if credentials are valid
         String token = tokenService.generateToken(username);
-
-        // Returns the token in a JSON format: { "access_token": "ey..." }
         return Map.of("access_token", token);
     }
 
