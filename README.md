@@ -35,7 +35,7 @@ The system implements a complete authentication flow using **JSON Web Tokens (JW
 
 1.  **Clone the repository:**
     ```bash
-    git clone [https://github.com/your-username/auth-system.git](https://github.com/your-username/auth-system.git)
+    git clone https://github.com/your-username/auth-system.git](https://github.com/your-username/auth-system.git
     cd auth-system
     ```
 
